@@ -192,11 +192,13 @@ void setup() {
     
     DEBUG_OUT(DEBUG_MIN_INFO, "Battery level: %.2f\n", battlevel); 
 
-    if (WiFi.hostByName(HOST_THINGSPEAK, thingspeakIP)) {
-        DEBUG_OUT(DEBUG_MIN_INFO, "Thingspeak IP: %s\n", thingspeakIP.toString().c_str()) ; 
+    if(WiFi.status()==WL_CONNECTED) {
+      if(WiFi.hostByName(HOST_THINGSPEAK, thingspeakIP)) {
+        DEBUG_OUT(DEBUG_MIN_INFO, "Thingspeak IP: %s\n", thingspeakIP.toString().c_str()); 
+      }
+      send2thingspeak(remainingVolume, battlevel, t, h, p);
     }
 
-    send2thingspeak(remainingVolume, battlevel, t, h, p);
     digitalWrite(switchPin, LOW);
 
     // Disconnect WiFi, allows proper deep sleep, takes longer to connect after deep sleep
@@ -246,7 +248,7 @@ double distanceMeasurement(double speedOfSound) {
 
 
 
-void connectWifi() {
+int connectWifi() {
   unsigned long startwifi=micros();
   unsigned int retry_count = 0;
   WiFi.forceSleepWake();
@@ -268,10 +270,17 @@ void connectWifi() {
     retry_count++;
   }
   DEBUG_OUT(DEBUG_MIN_INFO, "\n");
-  DEBUG_OUT(DEBUG_MIN_INFO, "WiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
-  
+ 
+  int success=WiFi.status();
+  if(success==WL_CONNECTED) {
+    DEBUG_OUT(DEBUG_MIN_INFO, "WiFi connected\nIP address: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    DEBUG_OUT(DEBUG_ERROR, "Failed to connect\n");
+  }
   DEBUG_OUT(DEBUG_MAX_INFO, "Number of tries: %d\n", retry_count);
   DEBUG_OUT(DEBUG_MAX_INFO, "Connecting time (microseconds): %lu\n", micros()-startwifi);
+
+  return success;
 }
 
 
